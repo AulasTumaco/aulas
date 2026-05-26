@@ -39,22 +39,26 @@ export class SalonesService {
     const salones = await this.prisma.salon.findMany({
       include: {
         reservas: {
-          where: {
-            horaInicio: { lte: ahora },
-            horaFin: { gte: ahora },
-          },
           include: { materia: true, docente: true },
         },
       },
     });
 
     return salones.map((salon) => {
-      const reservaActiva = salon.reservas[0] ?? null;
+      const ahoraMs = ahora.getTime();
+      
+      const reservaActiva = salon.reservas.find((r) => {
+        const inicio = new Date(r.horaInicio).getTime();
+        const fin = new Date(r.horaFin).getTime();
+        return inicio <= ahoraMs && fin >= ahoraMs;
+      }) ?? null;
+
       const estado = reservaActiva ? reservaActiva.estado : 'LIBRE';
       const alerta =
         reservaActiva && reservaActiva.materia.matriculados > salon.capacidad
           ? `SOBRECUPO: ${reservaActiva.materia.matriculados} estudiantes, capacidad ${salon.capacidad}`
           : null;
+
       return {
         id: salon.id,
         codigo: salon.codigo,
@@ -70,16 +74,22 @@ export class SalonesService {
 
   async alertas() {
     const ahora = new Date();
+    const ahoraMs = ahora.getTime();
+    
     const reservas = await this.prisma.reserva.findMany({
-      where: {
-        horaInicio: { lte: ahora },
-        horaFin: { gte: ahora },
-      },
       include: { salon: true, materia: true, docente: true },
     });
 
     return reservas
-      .filter((r) => r.materia.matriculados > r.salon.capacidad)
+      .filter((r) => {
+        const inicio = new Date(r.horaInicio).getTime();
+        const fin = new Date(r.horaFin).getTime();
+        return (
+          inicio <= ahoraMs && 
+          fin >= ahoraMs && 
+          r.materia.matriculados > r.salon.capacidad
+        );
+      })
       .map((r) => ({
         tipo: 'SOBRECUPO',
         salon: r.salon.nombre,
