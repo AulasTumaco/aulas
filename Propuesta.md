@@ -52,7 +52,7 @@ y avisa cuando hay un problema antes de que ocurra.
 
 | Rol | Integrante | Responsabilidades |
 |---|---|---|
-| Frontend |  | HTML5, CSS, Bootstrap, diseño responsivo |
+| Frontend | Alexander Rodriguez | HTML5, CSS, Bootstrap, diseño responsivo |
 | Backend | Darwin Iturre | NestJS, rutas, conexión a base de datos, sesiones, API REST |
 
 
@@ -67,5 +67,5 @@ y avisa cuando hay un problema antes de que ocurra.
 
 ## Opiniones del equipo sobre la idea
 
-- **: esta de web ayudaria a la organizzacion academica de la udenar sede tumaco 
+- **Alexander Rodriguez: esta de web ayudaria a la organizzacion academica de la udenar sede tumaco 
 - **Darwin Iturre:es una idea bien diseñada para la inconformidad de muchos estudiantes
