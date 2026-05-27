@@ -1,17 +1,23 @@
-export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
-export async function http<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options?.headers ?? {}),
-    },
+export async function http<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...options.headers },
     ...options,
   });
+
   if (!res.ok) {
-    const msg = await res.text();
-    throw new Error(msg || `HTTP ${res.status}`);
+    let mensaje = `Error ${res.status}`;
+    try {
+      const body = await res.json();
+      mensaje = body?.message ?? mensaje;
+    } catch { /* sin cuerpo JSON */ }
+    throw new Error(mensaje);
   }
+
   if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
+  return res.json();
 }

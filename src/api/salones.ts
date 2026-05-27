@@ -11,35 +11,53 @@ export type Salon = {
   tieneTablero: boolean;
 };
 
-export type SalonDashboard = {
+export type ReservaActiva = {
   id: number;
-  codigo: string;
-  nombre: string;
-  edificio: string;
-  capacidad: number;
+  estado: string;
+  horaInicio: string;
+  horaFin: string;
+  materia: { nombre: string; matriculados: number };
+  docente: { nombreCompleto: string };
+};
+
+export type ProximaReservaSlot = {
+  fecha: string;
+  hora: string;
+  materia: string;
+  docente: string;
+  matriculados: number;
+  estado: string;
+};
+
+export type SalonDashboard = Salon & {
   estado: "LIBRE" | "OCUPADO" | "RESERVADO";
-  reservaActiva: any | null;
+  reservaActiva: ReservaActiva | null;
+  proximaReserva: ReservaActiva | null;
   alerta: string | null;
+  proximasReservas: ProximaReservaSlot[];
 };
 
 export type Alerta = {
   tipo: string;
-  salon: string;
-  materia: string;
+  salonNombre: string;
+  salonCodigo: string;
+  materiaNombre: string;
   matriculados: number;
   capacidad: number;
-  docente: string;
+  exceso: number;
+  porcentaje: number;
+  docenteNombre: string;
   libreA: string;
 };
 
 export const salonesApi = {
-  list: () => http<Salon[]>("/salones"),
+  list:      () => http<Salon[]>("/salones"),
   dashboard: () => http<SalonDashboard[]>("/salones/dashboard"),
-  alertas: () => http<Alerta[]>("/salones/alertas"),
-  create: (dto: Omit<Salon, "id">) =>
+  alertas:   () => http<Alerta[]>("/salones/alertas"),
+  create:    (dto: Omit<Salon, "id">) =>
     http<Salon>("/salones", { method: "POST", body: JSON.stringify(dto) }),
-  update: (id: number, dto: Partial<Salon>) =>
+  update:    (id: number, dto: Partial<Salon>) =>
     http<Salon>(`/salones/${id}`, { method: "PATCH", body: JSON.stringify(dto) }),
-  remove: (id: number) =>
+  remove:    (id: number) =>
     http<void>(`/salones/${id}`, { method: "DELETE" }),
 };
