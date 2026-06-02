@@ -7,55 +7,53 @@ datasource db {
 }
 
 model ProgramaAcademico {
-  id        Int       @id @default(autoincrement())
-  nombre    String    @unique
-  createdAt DateTime  @default(now())
+  id        Int      @id @default(autoincrement())
+  nombre    String   @unique
+  createdAt DateTime @default(now())
 
-  materias  Materia[]
-  docentes  Docente[]
+  materias Materia[]
+  docentes Docente[]
 }
 
 model Salon {
-  id             Int       @id @default(autoincrement())
-  codigo         String    @unique
+  id             Int      @id @default(autoincrement())
+  codigo         String   @unique
   nombre         String
   edificio       String
   capacidad      Int
-  tieneProyector Boolean   @default(false)
-  tieneAC        Boolean   @default(false)
-  tieneTablero   Boolean   @default(true)
-  createdAt      DateTime  @default(now())
+  tieneProyector Boolean  @default(false)
+  tieneAC        Boolean  @default(false)
+  tieneTablero   Boolean  @default(true)
+  createdAt      DateTime @default(now())
 
-  reservas       Reserva[]
+  reservas Reserva[]
 
   @@index([edificio])
 }
 
 model Materia {
-  id                  Int       @id @default(autoincrement())
-  codigo              String    @unique
+  id                  Int      @id @default(autoincrement())
+  codigo              String   @unique
   nombre              String
   matriculados        Int
   programaAcademicoId Int
-  createdAt           DateTime  @default(now())
+  createdAt           DateTime @default(now())
 
-  programa            ProgramaAcademico @relation(fields: [programaAcademicoId], references: [id], onDelete: Restrict)
-
-  reservas            Reserva[]
+  programa ProgramaAcademico @relation(fields: [programaAcademicoId], references: [id], onDelete: Restrict)
+  reservas Reserva[]
 
   @@index([programaAcademicoId])
 }
 
 model Docente {
-  id                  Int       @id @default(autoincrement())
+  id                  Int      @id @default(autoincrement())
   nombreCompleto      String
-  correo              String    @unique
+  correo              String   @unique
   programaAcademicoId Int
-  createdAt           DateTime  @default(now())
+  createdAt           DateTime @default(now())
 
-  programa            ProgramaAcademico @relation(fields: [programaAcademicoId], references: [id], onDelete: Restrict)
-
-  reservas            Reserva[]
+  programa ProgramaAcademico @relation(fields: [programaAcademicoId], references: [id], onDelete: Restrict)
+  reservas Reserva[]
 
   @@index([programaAcademicoId])
 }
@@ -67,27 +65,29 @@ enum EstadoReserva {
 }
 
 model Reserva {
-  id         Int             @id @default(autoincrement())
-
+  id         Int           @id @default(autoincrement())
   salonId    Int
   materiaId  Int
   docenteId  Int
-
   fecha      DateTime
   horaInicio DateTime
   horaFin    DateTime
+  estado     EstadoReserva @default(RESERVADO)
+  createdAt  DateTime      @default(now())
 
-  estado     EstadoReserva   @default(RESERVADO)
-
-  createdAt  DateTime        @default(now())
-
-  salon       Salon   @relation(fields: [salonId], references: [id], onDelete: Restrict)
-
-  materia     Materia @relation(fields: [materiaId], references: [id], onDelete: Restrict)
-
-  docente     Docente @relation(fields: [docenteId], references: [id], onDelete: Restrict)
+  salon   Salon   @relation(fields: [salonId],   references: [id], onDelete: Restrict)
+  materia Materia @relation(fields: [materiaId], references: [id], onDelete: Restrict)
+  docente Docente @relation(fields: [docenteId], references: [id], onDelete: Restrict)
 
   @@index([salonId])
   @@index([fecha])
   @@index([horaInicio])
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  fullName  String
+  createdAt DateTime @default(now())
 }

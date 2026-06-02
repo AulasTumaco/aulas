@@ -9,12 +9,14 @@ import { MateriasModule } from './materias/materias.module';
 import { DocentesModule } from './docentes/docentes.module';
 import { ReservasModule } from './reservas/reservas.module';
 import { ProgramasModule } from './programas/programas.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     PrismaModule,
     HealthModule,
+    AuthModule,
     SalonesModule,
     MateriasModule,
     DocentesModule,
