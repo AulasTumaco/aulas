@@ -17,27 +17,22 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser>(() => {
-    const saved = localStorage.getItem("user");
-    return saved ? JSON.parse(saved) : null;
-  });
-
-  const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem("token");
-  });
+  // Empieza SIN sesión — el usuario debe hacer login siempre
+  const [user, setUser] = useState<AuthUser>(null);
+  const [token, setToken] = useState<string | null>(null);
 
   function login(newToken: string, newUser: AuthUser) {
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(newUser));
     setToken(newToken);
     setUser(newUser);
+    // Guarda solo para que http.ts pueda leerlo
+    localStorage.setItem("token", newToken);
   }
 
   function logout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
     setToken(null);
     setUser(null);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
   }
 
   return (

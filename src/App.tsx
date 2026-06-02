@@ -15,6 +15,7 @@ function App() {
   const { isAuthenticated, user, logout } = useAuth();
   const [page, setPage] = useState('dashboard');
 
+  // Muestra el login PRIMERO, el dashboard solo después de autenticarse
   if (!isAuthenticated) {
     return <LoginPage />;
   }
@@ -36,12 +37,12 @@ function App() {
       <SidebarMenu current={page} onChange={setPage} />
       <div className="mt-auto border-t pt-4 space-y-2">
         <div className="bg-blue-50 rounded-lg p-3">
-          <p className="text-xs font-medium text-blue-800">{user?.fullName}</p>
-          <p className="text-xs text-blue-600 truncate">{user?.email}</p>
+          <p className="text-xs font-semibold text-blue-800 truncate">{user?.fullName}</p>
+          <p className="text-xs text-blue-500 truncate">{user?.email}</p>
         </div>
         <button
           onClick={logout}
-          className="w-full text-left text-sm text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+          className="w-full text-left text-sm text-red-500 hover:text-red-700 px-2 py-1.5 rounded hover:bg-red-50 transition-colors flex items-center gap-2"
         >
           🚪 Cerrar sesión
         </button>
@@ -50,10 +51,7 @@ function App() {
   );
 
   return (
-    <MainLayout
-      sidebar={sidebar}
-      content={renderContent()}
-    />
+    <MainLayout sidebar={sidebar} content={renderContent()} />
   );
 }
 
