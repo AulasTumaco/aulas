@@ -8,7 +8,13 @@ function fmtHora(iso: string) {
   });
 }
 
-// ─── Fachada SVG tipo edificio universitario ────────────────────────────────
+function fmtFecha(iso: string) {
+  return new Date(iso).toLocaleDateString("es-CO", {
+    weekday: "long", day: "numeric", month: "long", timeZone: "America/Bogota",
+  });
+}
+
+// ─── Fachada SVG tipo edificio universitario ─────────────────────────────────
 function AulaFacade({ estado, capacidad }: { estado: string; capacidad: number }) {
   const C = {
     OCUPADO:   { wall: "#dc2626", win: "#fca5a5", roof: "#991b1b", door: "#7f1d1d", grass: "#16a34a" },
@@ -40,11 +46,9 @@ function AulaFacade({ estado, capacidad }: { estado: string; capacidad: number }
 // ─── Timeline de próximas reservas ──────────────────────────────────────────
 function ProximasReservas({ slots }: { slots: ProximaReservaSlot[] }) {
   if (!slots || slots.length === 0) return null;
-
   const dot: Record<string, string> = {
     OCUPADO: "bg-red-500", RESERVADO: "bg-amber-400", LIBRE: "bg-emerald-500",
   };
-
   return (
     <div className="mt-3 pt-3 border-t border-gray-100">
       <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">
@@ -68,8 +72,171 @@ function ProximasReservas({ slots }: { slots: ProximaReservaSlot[] }) {
   );
 }
 
+// ─── Modal de detalle ────────────────────────────────────────────────────────
+function ModalDetalle({ salon, onClose }: { salon: SalonDashboard; onClose: () => void }) {
+  const pct = salon.reservaActiva
+    ? Math.round((salon.reservaActiva.materia.matriculados / salon.capacidad) * 100)
+    : 0;
+
+  const duracion = salon.reservaActiva
+    ? Math.round(
+        (new Date(salon.reservaActiva.horaFin).getTime() -
+          new Date(salon.reservaActiva.horaInicio).getTime()) / 60000
+      )
+    : 0;
+
+  const headerColor = {
+    LIBRE:     "bg-emerald-500",
+    OCUPADO:   "bg-red-500",
+    RESERVADO: "bg-amber-500",
+  }[salon.estado] ?? "bg-gray-500";
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className={`${headerColor} px-6 py-4 flex justify-between items-center sticky top-0`}>
+          <div>
+            <p className="text-white/80 text-xs font-medium uppercase tracking-wide">
+              {salon.codigo} · {salon.edificio}
+            </p>
+            <h2 className="text-white font-bold text-xl">{salon.nombre}</h2>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/20 text-white border border-white/30">
+              {salon.estado}
+            </span>
+            <button onClick={onClose} className="text-white/80 hover:text-white text-2xl leading-none">
+              ×
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          {/* Equipamiento */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Equipamiento</p>
+            <div className="flex gap-2 flex-wrap">
+              <span className="bg-gray-100 text-gray-700 text-xs px-3 py-1.5 rounded-full">
+                🪑 Capacidad: {salon.capacidad} personas
+              </span>
+              {salon.tieneProyector && (
+                <span className="bg-blue-50 text-blue-700 text-xs px-3 py-1.5 rounded-full">📽 Proyector</span>
+              )}
+              {salon.tieneAC && (
+                <span className="bg-cyan-50 text-cyan-700 text-xs px-3 py-1.5 rounded-full">❄️ Aire acondicionado</span>
+              )}
+              {salon.tieneTablero && (
+                <span className="bg-gray-50 text-gray-600 text-xs px-3 py-1.5 rounded-full">📋 Tablero</span>
+              )}
+            </div>
+          </div>
+
+          {/* Clase activa */}
+          {salon.reservaActiva && (
+            <>
+              <div className="border-t pt-4">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Clase en curso</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Materia",     value: salon.reservaActiva.materia.nombre },
+                    { label: "Docente",     value: salon.reservaActiva.docente.nombreCompleto },
+                    { label: "Hora inicio", value: fmtHora(salon.reservaActiva.horaInicio) },
+                    { label: "Hora fin",    value: fmtHora(salon.reservaActiva.horaFin) },
+                    {
+                      label: "Duración",
+                      value: duracion >= 60
+                        ? `${Math.floor(duracion / 60)}h ${duracion % 60}min`
+                        : `${duracion} min`,
+                    },
+                    { label: "Fecha", value: fmtFecha(salon.reservaActiva.horaInicio) },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="bg-gray-50 rounded-xl p-3">
+                      <p className="text-xs text-gray-500 mb-1">{label}</p>
+                      <p className="font-semibold text-gray-800 text-sm capitalize">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ocupación */}
+              <div className="border-t pt-4">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Nivel de ocupación</p>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600">
+                    {salon.reservaActiva.materia.matriculados} estudiantes matriculados
+                  </span>
+                  <span className={`text-sm font-bold ${pct > 100 ? "text-red-600" : pct > 80 ? "text-amber-600" : "text-emerald-600"}`}>
+                    {pct}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full transition-all ${pct > 100 ? "bg-red-500" : pct > 80 ? "bg-amber-400" : "bg-emerald-400"}`}
+                    style={{ width: `${Math.min(pct, 100)}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-gray-400 mt-1">
+                  <span>0</span>
+                  <span>Capacidad máxima: {salon.capacidad}</span>
+                </div>
+                {pct > 100 && (
+                  <div className="mt-2 bg-red-50 border border-red-200 rounded-xl p-3">
+                    <p className="text-red-700 text-sm font-semibold">
+                      🚨 Sobrecupo: {salon.reservaActiva.materia.matriculados - salon.capacidad} estudiantes exceden la capacidad
+                    </p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Libre */}
+          {salon.estado === "LIBRE" && !salon.proximaReserva && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
+              <p className="text-2xl mb-1">✅</p>
+              <p className="text-emerald-700 font-semibold">Disponible ahora</p>
+              <p className="text-emerald-600 text-sm">Sin clases programadas</p>
+            </div>
+          )}
+
+          {/* Próxima reserva */}
+          {salon.proximaReserva && (
+            <div className="border-t pt-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Próxima clase</p>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-1">
+                <p className="text-sm font-semibold text-amber-800">📚 {salon.proximaReserva.materia.nombre}</p>
+                <p className="text-sm text-amber-700">👨‍🏫 {salon.proximaReserva.docente.nombreCompleto}</p>
+                <p className="text-sm text-amber-600">🕐 Inicia a las {fmtHora(salon.proximaReserva.horaInicio)}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Timeline completo */}
+          <ProximasReservas slots={salon.proximasReservas} />
+        </div>
+
+        <div className="px-6 pb-6">
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Tarjeta de salón ────────────────────────────────────────────────────────
-function TarjetaSalon({ salon }: { salon: SalonDashboard }) {
+function TarjetaSalon({ salon, onClick }: { salon: SalonDashboard; onClick: () => void }) {
   const pct = salon.reservaActiva
     ? Math.round((salon.reservaActiva.materia.matriculados / salon.capacidad) * 100)
     : 0;
@@ -83,11 +250,13 @@ function TarjetaSalon({ salon }: { salon: SalonDashboard }) {
   }[salon.estado] ?? "bg-gray-100 text-gray-600 border-gray-200";
 
   return (
-    <div className="rounded-xl overflow-hidden border border-gray-100 bg-white hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+    <div
+      onClick={onClick}
+      className="rounded-xl overflow-hidden border border-gray-100 bg-white hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 cursor-pointer"
+    >
       <AulaFacade estado={salon.estado} capacidad={salon.capacidad} />
 
       <div className="px-3.5 pt-3 pb-4">
-        {/* Nombre y badge */}
         <div className="flex justify-between items-start mb-2 gap-2">
           <div className="min-w-0">
             <p className="text-sm font-semibold text-gray-800 truncate">{salon.nombre}</p>
@@ -98,29 +267,21 @@ function TarjetaSalon({ salon }: { salon: SalonDashboard }) {
           </span>
         </div>
 
-        {/* Chips equipamiento */}
         <div className="flex flex-wrap gap-1 mb-3">
           <span className="text-[11px] bg-gray-50 border border-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
             🪑 {salon.capacidad}
           </span>
           {salon.tieneProyector && (
-            <span className="text-[11px] bg-gray-50 border border-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-              📽 Proyector
-            </span>
+            <span className="text-[11px] bg-gray-50 border border-gray-100 text-gray-500 px-2 py-0.5 rounded-full">📽 Proyector</span>
           )}
           {salon.tieneAC && (
-            <span className="text-[11px] bg-gray-50 border border-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-              ❄️ AC
-            </span>
+            <span className="text-[11px] bg-gray-50 border border-gray-100 text-gray-500 px-2 py-0.5 rounded-full">❄️ AC</span>
           )}
           {salon.tieneTablero && (
-            <span className="text-[11px] bg-gray-50 border border-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-              📋 Tablero
-            </span>
+            <span className="text-[11px] bg-gray-50 border border-gray-100 text-gray-500 px-2 py-0.5 rounded-full">📋 Tablero</span>
           )}
         </div>
 
-        {/* Estado actual */}
         {salon.reservaActiva && (
           <div className="rounded-lg bg-red-50 border border-red-100 p-2.5 space-y-1.5">
             <p className="text-[10px] font-semibold text-red-600 uppercase tracking-wider flex items-center gap-1.5">
@@ -137,10 +298,7 @@ function TarjetaSalon({ salon }: { salon: SalonDashboard }) {
                 </span>
               </div>
               <div className="h-1.5 bg-red-100 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${barColor}`}
-                  style={{ width: `${Math.min(pct, 100)}%` }}
-                />
+                <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
               </div>
             </div>
             {sobrecupo && (
@@ -174,8 +332,9 @@ function TarjetaSalon({ salon }: { salon: SalonDashboard }) {
           </div>
         )}
 
-        {/* Timeline 7 días */}
         <ProximasReservas slots={salon.proximasReservas} />
+
+        <p className="text-xs text-blue-500 text-right font-medium mt-2">Ver detalle →</p>
       </div>
     </div>
   );
@@ -183,10 +342,12 @@ function TarjetaSalon({ salon }: { salon: SalonDashboard }) {
 
 // ─── Página principal ────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const [salones, setSalones] = useState<SalonDashboard[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [filtro, setFiltro] = useState<"TODOS" | "LIBRE" | "OCUPADO" | "RESERVADO">("TODOS");
+  const [salones, setSalones]                   = useState<SalonDashboard[]>([]);
+  const [loading, setLoading]                   = useState(true);
+  const [error, setError]                       = useState<string | null>(null);
+  const [filtro, setFiltro]                     = useState<"TODOS" | "LIBRE" | "OCUPADO" | "RESERVADO">("TODOS");
+  const [busqueda, setBusqueda]                 = useState("");
+  const [salonSeleccionado, setSalonSeleccionado] = useState<SalonDashboard | null>(null);
   const [ultimaActualizacion, setUltimaActualizacion] = useState<Date | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -209,14 +370,30 @@ export default function DashboardPage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []);
 
-  const libres    = salones.filter((s) => s.estado === "LIBRE").length;
-  const ocupados  = salones.filter((s) => s.estado === "OCUPADO").length;
-  const reservados= salones.filter((s) => s.estado === "RESERVADO").length;
-  const alertas   = salones.filter((s) => s.alerta).length;
-  const filtrados = filtro === "TODOS" ? salones : salones.filter((s) => s.estado === filtro);
+  const libres     = salones.filter((s) => s.estado === "LIBRE").length;
+  const ocupados   = salones.filter((s) => s.estado === "OCUPADO").length;
+  const reservados = salones.filter((s) => s.estado === "RESERVADO").length;
+  const alertas    = salones.filter((s) => s.alerta).length;
+
+  const filtrados = salones
+    .filter((s) => filtro === "TODOS" || s.estado === filtro)
+    .filter((s) => {
+      const q = busqueda.toLowerCase().trim();
+      if (!q) return true;
+      return (
+        s.nombre.toLowerCase().includes(q) ||
+        s.codigo.toLowerCase().includes(q) ||
+        s.edificio.toLowerCase().includes(q)
+      );
+    });
 
   return (
     <div className="space-y-5">
+      {/* Modal */}
+      {salonSeleccionado && (
+        <ModalDetalle salon={salonSeleccionado} onClose={() => setSalonSeleccionado(null)} />
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
@@ -247,10 +424,15 @@ export default function DashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Libres",     num: libres,    desc: "disponibles ahora",  color: "bg-green-600",  f: "LIBRE" },
-          { label: "Ocupados",   num: ocupados,  desc: "en uso ahora",       color: "bg-red-600",    f: "OCUPADO" },
-          { label: "Reservados", num: reservados,desc: "próximas clases",    color: "bg-amber-500",  f: "RESERVADO" },
-          { label: "Alertas",    num: alertas,   desc: alertas > 0 ? "sobrecupos activos" : "sin problemas", color: alertas > 0 ? "bg-rose-700" : "bg-gray-500", f: "TODOS" },
+          { label: "Libres",     num: libres,    desc: "disponibles ahora", color: "bg-green-600",  f: "LIBRE"     },
+          { label: "Ocupados",   num: ocupados,  desc: "en uso ahora",      color: "bg-red-600",    f: "OCUPADO"   },
+          { label: "Reservados", num: reservados,desc: "próximas clases",   color: "bg-amber-500",  f: "RESERVADO" },
+          {
+            label: "Alertas", num: alertas,
+            desc: alertas > 0 ? "sobrecupos activos" : "sin problemas",
+            color: alertas > 0 ? "bg-rose-700" : "bg-gray-500",
+            f: "TODOS",
+          },
         ].map(({ label, num, desc, color, f }) => (
           <button
             key={f}
@@ -264,27 +446,59 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Filtros */}
-      <div className="flex gap-2 flex-wrap">
-        {(["TODOS", "LIBRE", "OCUPADO", "RESERVADO"] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFiltro(f)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filtro === f
-                ? "bg-blue-600 text-white"
-                : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            {f === "TODOS" ? `Todos (${salones.length})` :
-             f === "LIBRE" ? `Libres (${libres})` :
-             f === "OCUPADO" ? `Ocupados (${ocupados})` :
-             `Reservados (${reservados})`}
-          </button>
-        ))}
+      {/* Búsqueda + Filtros */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        {/* Barra de búsqueda */}
+        <div className="relative flex-1">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+          <input
+            type="text"
+            placeholder="Buscar por nombre, código o edificio..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          />
+          {busqueda && (
+            <button
+              onClick={() => setBusqueda("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        {/* Filtros de estado */}
+        <div className="flex gap-2 flex-wrap">
+          {(["TODOS", "LIBRE", "OCUPADO", "RESERVADO"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFiltro(f)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                filtro === f
+                  ? "bg-blue-600 text-white"
+                  : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              {f === "TODOS"     ? `Todos (${salones.length})` :
+               f === "LIBRE"    ? `Libres (${libres})`        :
+               f === "OCUPADO"  ? `Ocupados (${ocupados})`    :
+               `Reservados (${reservados})`}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Loading */}
+      {/* Resultado de búsqueda */}
+      {busqueda && !loading && (
+        <p className="text-sm text-gray-500">
+          {filtrados.length === 0
+            ? `Sin resultados para "${busqueda}"`
+            : `${filtrados.length} salón(es) encontrado(s) para "${busqueda}"`}
+        </p>
+      )}
+
+      {/* Skeleton loading */}
       {loading && (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -299,17 +513,21 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Grid */}
+      {/* Grid de salones */}
       {!loading && (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtrados.map((s) => <TarjetaSalon key={s.id} salon={s} />)}
+          {filtrados.map((s) => (
+            <TarjetaSalon key={s.id} salon={s} onClick={() => setSalonSeleccionado(s)} />
+          ))}
         </div>
       )}
 
       {!loading && filtrados.length === 0 && (
         <div className="text-center py-14 text-gray-400">
           <p className="text-4xl mb-2">🏫</p>
-          <p className="font-medium">No hay salones en este estado</p>
+          <p className="font-medium">
+            {busqueda ? `Sin resultados para "${busqueda}"` : "No hay salones en este estado"}
+          </p>
         </div>
       )}
     </div>
