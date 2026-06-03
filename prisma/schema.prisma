@@ -1,10 +1,43 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // Recuerda tener tu variable de entorno configurada
+}
+
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
+// ==========================================
+// ENUMS
+// ==========================================
+
+enum RolUsuario {
+  ADMIN
+  DOCENTE
 }
+
+enum EstadoReserva {
+  LIBRE
+  OCUPADO
+  RESERVADO
+}
+
+// ==========================================
+// MODELOS DE USUARIO Y AUTENTICACIÓN
+// ==========================================
+
+model User {
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
+  password  String
+  fullName  String
+  rol       RolUsuario @default(DOCENTE)
+  createdAt DateTime   @default(now())
+}
+
+// ==========================================
+// MODELOS ACADÉMICOS
+// ==========================================
 
 model ProgramaAcademico {
   id        Int      @id @default(autoincrement())
@@ -58,36 +91,28 @@ model Docente {
   @@index([programaAcademicoId])
 }
 
-enum EstadoReserva {
-  LIBRE
-  OCUPADO
-  RESERVADO
-}
+// ==========================================
+// MODELO DE RESERVAS (GESTIÓN DE HORARIOS)
+// ==========================================
 
 model Reserva {
-  id         Int           @id @default(autoincrement())
-  salonId    Int
-  materiaId  Int
-  docenteId  Int
-  fecha      DateTime
-  horaInicio DateTime
-  horaFin    DateTime
-  estado     EstadoReserva @default(RESERVADO)
-  createdAt  DateTime      @default(now())
+  id        Int           @id @default(autoincrement())
+  salonId   Int
+  materiaId Int
+  docenteId Int
+  
+  // Optimización: Unificamos fecha y hora para evitar problemas de desfase
+  fechaInicio DateTime
+  fechaFin    DateTime
+  
+  estado    EstadoReserva @default(RESERVADO)
+  createdAt DateTime      @default(now())
 
   salon   Salon   @relation(fields: [salonId],   references: [id], onDelete: Restrict)
   materia Materia @relation(fields: [materiaId], references: [id], onDelete: Restrict)
   docente Docente @relation(fields: [docenteId], references: [id], onDelete: Restrict)
 
   @@index([salonId])
-  @@index([fecha])
-  @@index([horaInicio])
-}
-
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  fullName  String
-  createdAt DateTime @default(now())
+  @@index([fechaInicio])
+  @@index([fechaFin])
 }
