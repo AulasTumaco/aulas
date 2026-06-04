@@ -48,6 +48,7 @@ model Reserva {
 
 model Materia {
   id           Int               @id @default(autoincrement())
+  codigo       String            @unique
   nombre       String
   matriculados Int
   programaId   Int
