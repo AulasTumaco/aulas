@@ -6,20 +6,28 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+  fullName String // Campo necesario para auth.service
+}
+
 model Salon {
   id             Int       @id @default(autoincrement())
   codigo         String    @unique
   nombre         String
   edificio       String
   capacidad      Int
-  tieneProyector Boolean
-  tieneAC        Boolean
-  tieneTablero   Boolean
+  tieneProyector Boolean   @default(false)
+  tieneAC        Boolean   @default(false)
+  tieneTablero   Boolean   @default(false)
   reservas       Reserva[]
 }
 
 model Reserva {
   id          Int      @id @default(autoincrement())
+  fecha       DateTime // Campo necesario para reservas.service
   horaInicio  DateTime
   horaFin     DateTime
   salonId     Int
@@ -35,22 +43,22 @@ model Materia {
   id           Int       @id @default(autoincrement())
   nombre       String
   matriculados Int
+  programaId   Int
+  programa     ProgramaAcademico @relation(fields: [programaId], references: [id])
   reservas     Reserva[]
 }
 
 model Docente {
   id             Int       @id @default(autoincrement())
   nombreCompleto String
+  programaId     Int
+  programa       ProgramaAcademico @relation(fields: [programaId], references: [id])
   reservas       Reserva[]
 }
 
-model User {
-  id       Int    @id @default(autoincrement())
-  email    String @unique
-  password String
-}
-
 model ProgramaAcademico {
-  id     Int    @id @default(autoincrement())
-  nombre String
+  id        Int       @id @default(autoincrement())
+  nombre    String
+  materias  Materia[]
+  docentes  Docente[]
 }
