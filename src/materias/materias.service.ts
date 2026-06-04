@@ -6,7 +6,14 @@ export class MateriasService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(data: { codigo: string; nombre: string; matriculados: number; programaAcademicoId: number }) {
-    return this.prisma.materia.create({ data });
+    return this.prisma.materia.create({
+      data: {
+        codigo: data.codigo,
+        nombre: data.nombre,
+        matriculados: data.matriculados,
+        programa: { connect: { id: data.programaAcademicoId } }
+      }
+    });
   }
 
   async findAll() {
@@ -18,13 +25,14 @@ export class MateriasService {
 
   async findOne(id: number) {
     const mat = await this.prisma.materia.findUnique({
-      where: { id }, include: { programa: true },
+      where: { id },
+      include: { programa: true },
     });
     if (!mat) throw new NotFoundException(`Materia ${id} no existe`);
     return mat;
   }
 
-  async update(id: number, data: Partial<{ codigo: string; nombre: string; matriculados: number }>) {
+  async update(id: number, data: any) {
     await this.findOne(id);
     return this.prisma.materia.update({ where: { id }, data });
   }

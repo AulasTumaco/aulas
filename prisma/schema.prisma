@@ -6,11 +6,11 @@ datasource db {
   provider = "postgresql"
 }
 
-// Definimos el Enum para solucionar el error de tipo en Reservas
 enum EstadoReserva {
   PENDIENTE
   CONFIRMADA
   CANCELADA
+  RESERVADO
 }
 
 model User {
