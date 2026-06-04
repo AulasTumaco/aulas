@@ -6,11 +6,18 @@ datasource db {
   provider = "postgresql"
 }
 
+// Definimos el Enum para solucionar el error de tipo en Reservas
+enum EstadoReserva {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+}
+
 model User {
   id       Int    @id @default(autoincrement())
   email    String @unique
   password String
-  fullName String // Campo necesario para auth.service
+  fullName String
 }
 
 model Salon {
@@ -26,21 +33,21 @@ model Salon {
 }
 
 model Reserva {
-  id          Int      @id @default(autoincrement())
-  fecha       DateTime // Campo necesario para reservas.service
+  id          Int           @id @default(autoincrement())
+  fecha       DateTime
   horaInicio  DateTime
   horaFin     DateTime
   salonId     Int
-  salon       Salon    @relation(fields: [salonId], references: [id])
+  salon       Salon         @relation(fields: [salonId], references: [id])
   materiaId   Int
-  materia     Materia  @relation(fields: [materiaId], references: [id])
+  materia     Materia       @relation(fields: [materiaId], references: [id])
   docenteId   Int
-  docente     Docente  @relation(fields: [docenteId], references: [id])
-  estado      String
+  docente     Docente       @relation(fields: [docenteId], references: [id])
+  estado      EstadoReserva @default(PENDIENTE)
 }
 
 model Materia {
-  id           Int       @id @default(autoincrement())
+  id           Int               @id @default(autoincrement())
   nombre       String
   matriculados Int
   programaId   Int
@@ -49,7 +56,7 @@ model Materia {
 }
 
 model Docente {
-  id             Int       @id @default(autoincrement())
+  id             Int               @id @default(autoincrement())
   nombreCompleto String
   programaId     Int
   programa       ProgramaAcademico @relation(fields: [programaId], references: [id])
@@ -57,8 +64,8 @@ model Docente {
 }
 
 model ProgramaAcademico {
-  id        Int       @id @default(autoincrement())
-  nombre    String
-  materias  Materia[]
-  docentes  Docente[]
+  id       Int       @id @default(autoincrement())
+  nombre   String
+  materias Materia[]
+  docentes Docente[]
 }
